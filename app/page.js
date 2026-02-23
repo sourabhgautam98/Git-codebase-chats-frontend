@@ -1,64 +1,143 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function Home() {
+  const [repoUrl, setRepoUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null); // { type: 'success'|'error'|'loading', message: '' }
+  const [sessions, setSessions] = useState([]);
+  const router = useRouter();
+
+  // Fetch existing sessions
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/chat/sessions`);
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data);
+      }
+    } catch {
+      // Server may not be running yet
+    }
+  };
+
+  const handleIngest = async (e) => {
+    e.preventDefault();
+    if (!repoUrl.trim()) return;
+
+    setLoading(true);
+    setStatus({ type: "loading", message: "🔄 Cloning repository and processing code files... This may take a minute." });
+
+    try {
+      const res = await fetch(`${API_BASE}/repo/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repoUrl: repoUrl.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus({
+          type: "success",
+          message: `✅ ${data.message}${data.stats ? ` — ${data.stats.vectorsStored} code chunks embedded.` : ""}`,
+        });
+        setRepoUrl("");
+        fetchSessions();
+
+        // Navigate to chat after brief delay
+        setTimeout(() => {
+          router.push(`/chat/${data.sessionId}`);
+        }, 1500);
+      } else {
+        setStatus({ type: "error", message: `❌ ${data.error || "Ingestion failed"}` });
+      }
+    } catch (err) {
+      setStatus({
+        type: "error",
+        message: `❌ Failed to connect to server. Make sure the backend is running on port 5000.`,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <div className="app-layout">
+      <Sidebar
+        sessions={sessions}
+        activeSessionId={null}
+        onNewChat={() => {
+          setStatus(null);
+          setRepoUrl("");
+        }}
+      />
+
+      <main className="main-content">
+        <div className="landing">
+          <div className="landing-hero">
+            <div className="landing-icon">💬</div>
+            <h2>Chat with Any Codebase</h2>
+            <p>
+              Paste a GitHub repository URL and start asking questions about the code.
+              AI-powered by Gemini with context from the actual source files.
+            </p>
+
+            <form className="repo-input-wrapper" onSubmit={handleIngest}>
+              <input
+                type="url"
+                className="repo-input"
+                placeholder="https://github.com/owner/repo"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                disabled={loading}
+                required
+              />
+              <button type="submit" className="ingest-btn" disabled={loading || !repoUrl.trim()}>
+                {loading ? (
+                  <>
+                    <div className="spinner"></div>
+                    Processing
+                  </>
+                ) : (
+                  <>🚀 Ingest</>
+                )}
+              </button>
+            </form>
+
+            {status && (
+              <div className={`status-message ${status.type}`}>
+                {status.message}
+              </div>
+            )}
+
+            <div className="landing-features">
+              <div className="feature-card">
+                <div className="feature-card-icon">📂</div>
+                <h4>Clone & Parse</h4>
+                <p>Automatically clones and parses code files</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-card-icon">🧠</div>
+                <h4>Smart Embeddings</h4>
+                <p>Google AI embeds code for semantic search</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-card-icon">💡</div>
+                <h4>Contextual Answers</h4>
+                <p>Gemini answers with actual code context</p>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
