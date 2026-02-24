@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import ChatMessage from "@/components/ChatMessage";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ;
 
 const SUGGESTION_QUESTIONS = [
   "What is the overall architecture of this project?",

@@ -4,16 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ;
 
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null); // { type: 'success'|'error'|'loading', message: '' }
+  const [status, setStatus] = useState(null); 
   const [sessions, setSessions] = useState([]);
   const router = useRouter();
 
-  // Fetch existing sessions
   useEffect(() => {
     fetchSessions();
   }, []);
@@ -26,7 +25,6 @@ export default function Home() {
         setSessions(data);
       }
     } catch {
-      // Server may not be running yet
     }
   };
 
@@ -54,7 +52,7 @@ export default function Home() {
         setRepoUrl("");
         fetchSessions();
 
-        // Navigate to chat after brief delay
+    
         setTimeout(() => {
           router.push(`/chat/${data.sessionId}`);
         }, 1500);
