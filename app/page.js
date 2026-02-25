@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");

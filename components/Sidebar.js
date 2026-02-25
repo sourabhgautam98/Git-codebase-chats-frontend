@@ -52,7 +52,7 @@ export default function Sidebar({ sessions, activeSessionId, onNewChat }) {
               ></span>
               {session.status === "ready" ? "Ready" : session.status === "ingesting" ? "Ingesting..." : "Error"}
               <span>·</span>
-              <span>
+              <span suppressHydrationWarning>
                 {new Date(session.updatedAt).toLocaleDateString()}
               </span>
             </div>
